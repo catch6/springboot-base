@@ -11,6 +11,6 @@ mybatis-plus:
   global-config:
     db-config:
       id-type: auto
-      logic-delete-field: deleteTime
-      logic-delete-value: 'NOW()'
-      logic-not-delete-value: 'NULL'
+      logic-delete-field: isDeleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
