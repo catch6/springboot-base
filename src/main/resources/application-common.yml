@@ -1,0 +1,16 @@
+spring:
+  mvc:
+    format:
+      # 非 json 请求的日期时间格式
+      date-time: yyyy-MM-dd HH:mm:ss
+      date: yyyy-MM-dd
+
+mybatis-plus:
+  type-enums-package: net.wenzuo.**.entity.enums
+  mapper-locations: classpath*:/mapper/*.xml
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleteTime
+      logic-delete-value: 'NOW()'
+      logic-not-delete-value: 'NULL'

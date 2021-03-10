@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<included>
+
+    <!-- 日志文件存放路径在 application.yml 中设置 logging.file.path -->
+    <springProperty scope="context" name="logback.dir" source="logging.file.path"/>
+
+    <!-- ExceptionHandlerExceptionResolver 的日志警告实际已经经过了 ExceptionConfig 的处理,
+        所以此处警告多余 -->
+    <logger name="org.springframework.web.servlet.mvc.method.annotation.ExceptionHandlerExceptionResolver"
+            level="OFF"/>
+
+    <!-- 日志渲染格式 -->
+    <property name="CONSOLE_LOG_PATTERN" value="${CONSOLE_LOG_PATTERN:-%clr(%d{${LOG_DATEFORMAT_PATTERN:-yyyy-MM-dd HH:mm:ss.SSS}}){faint} %clr([X-ID:%X{X-ID}]){magenta} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}}"/>
+    <property name="FILE_LOG_PATTERN" value="${FILE_LOG_PATTERN:-%d{${LOG_DATEFORMAT_PATTERN:-yyyy-MM-dd HH:mm:ss.SSS}} [X-ID:%X{X-ID}] ${LOG_LEVEL_PATTERN:-%5p} ${PID:- } --- [%t] %-40.40logger{39} : %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}}"/>
+
+    <!-- SpringBoot 提供的彩色日志 -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <!-- SpringBoot 提供的控制台日志 -->
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+    <property name="ALL_HISTORY_DAYS" value="90"/>
+    <property name="ERROR_HISTORY_DAYS" value="90"/>
+
+    <appender name="FILE_ALL" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- 日志级别过滤 -->
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+        <!-- 日志名称 -->
+        <File>${logback.dir}/all.log</File>
+        <!-- 滚动策略，按照时间滚动 TimeBasedRollingPolicy -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- 文件路径,定义了日志的切分方式——把每一天的日志归档到一个文件中,以防止日志填满整个磁盘空间 -->
+            <FileNamePattern>${logback.dir}/all.%d{yyyy-MM-dd}.log</FileNamePattern>
+            <!-- 只保留最近180天的日志 -->
+            <maxHistory>${ALL_HISTORY_DAYS}</maxHistory>
+            <!-- 用来指定日志文件的上限大小，那么到了这个值，就会删除旧的日志 -->
+            <!-- <totalSizeCap>1GB</totalSizeCap>  -->
+        </rollingPolicy>
+        <!-- 日志输出编码格式化 -->
+        <encoder>
+            <charset>UTF-8</charset>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="FILE_ERROR" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- 如果只是想要 ERROR 级别的日志，那么需要过滤一下，默认是 info 级别的，ThresholdFilter -->
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+        <!-- 日志名称，如果没有File 属性，那么只会使用FileNamePattern的文件路径规则
+            如果同时有<File>和<FileNamePattern>，那么当天日志是<File>，明天会自动把今天
+            的日志改名为今天的日期。即，<File> 的日志都是当天的。 -->
+        <File>${logback.dir}/error.log</File>
+        <!-- 滚动策略，按照时间滚动 TimeBasedRollingPolicy -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- 文件路径,定义了日志的切分方式——把每一天的日志归档到一个文件中,以防止日志填满整个磁盘空间 -->
+            <FileNamePattern>${logback.dir}/error.%d{yyyy-MM-dd}.log</FileNamePattern>
+            <!-- 只保留最近180天的日志 -->
+            <maxHistory>${ALL_HISTORY_DAYS}</maxHistory>
+            <!-- 用来指定日志文件的上限大小，那么到了这个值，就会删除旧的日志 -->
+            <!-- <totalSizeCap>1GB</totalSizeCap> -->
+        </rollingPolicy>
+        <!-- 日志输出编码格式化 -->
+        <encoder>
+            <charset>UTF-8</charset>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 指定 root 的日志输出级别 -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE_ALL"/>
+        <appender-ref ref="FILE_ERROR"/>
+    </root>
+
+</included>
