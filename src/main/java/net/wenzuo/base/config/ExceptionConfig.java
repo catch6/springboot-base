@@ -9,9 +9,9 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
-import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import javax.validation.ConstraintViolation;
@@ -25,7 +25,7 @@ import java.util.Set;
  * @author Catch
  */
 @Slf4j
-@ControllerAdvice
+@RestControllerAdvice
 public class ExceptionConfig {
 
     /**
@@ -40,6 +40,19 @@ public class ExceptionConfig {
     public Ret<Void> handler(ServiceException e) {
         log.error(e.getMessage(), e);
         return Ret.fail(e.getCode(), e.getMessage());
+    }
+
+    /**
+     * 参数错误
+     *
+     * @param e 异常对象
+     * @return Ret
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    @ResponseBody
+    public Ret<Void> handler(IllegalArgumentException e) {
+        log.error(e.getMessage(), e);
+        return Ret.fail(e.getMessage());
     }
 
     /**

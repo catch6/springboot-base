@@ -27,7 +27,7 @@ import java.util.Enumeration;
  */
 @Slf4j
 @Component
-@Order(10)
+@Order(-1)
 public class LoggingInterceptor implements HandlerInterceptor {
 
     @Override
@@ -37,10 +37,8 @@ public class LoggingInterceptor implements HandlerInterceptor {
         if (!(handler instanceof HandlerMethod)) {
             return true;
         }
-
         long start = System.currentTimeMillis();
         request.setAttribute("start", start);
-
         StringBuilder logAppender = new StringBuilder(LoggingConsts.START);
 
         HandlerMethod handlerMethod = (HandlerMethod) handler;

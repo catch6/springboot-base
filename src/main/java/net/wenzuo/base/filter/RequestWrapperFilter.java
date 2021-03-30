@@ -51,4 +51,9 @@ public class RequestWrapperFilter extends OncePerRequestFilter {
         }
     }
 
+    @Override
+    public void destroy() {
+        super.destroy();
+    }
+
 }
