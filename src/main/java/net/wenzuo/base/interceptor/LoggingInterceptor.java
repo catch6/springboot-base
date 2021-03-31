@@ -1,6 +1,5 @@
 package net.wenzuo.base.interceptor;
 
-import cn.hutool.core.io.IoUtil;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import net.wenzuo.base.util.JsonUtil;
@@ -15,9 +14,7 @@ import org.springframework.web.util.ContentCachingResponseWrapper;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Enumeration;
 
 /**
  * 日志拦截器
@@ -26,8 +23,8 @@ import java.util.Enumeration;
  * @author Catch
  */
 @Slf4j
-@Component
 @Order(-1)
+@Component
 public class LoggingInterceptor implements HandlerInterceptor {
 
     @Override
@@ -37,17 +34,15 @@ public class LoggingInterceptor implements HandlerInterceptor {
         if (!(handler instanceof HandlerMethod)) {
             return true;
         }
-        long start = System.currentTimeMillis();
-        request.setAttribute("start", start);
-        StringBuilder logAppender = new StringBuilder(LoggingConsts.START);
+        LoggingContextHolder.start();
+        LoggingContextHolder.append("\n╔")
+                .append("═".repeat(60));
 
         HandlerMethod handlerMethod = (HandlerMethod) handler;
-        logAppender.append(LoggingConsts.EXECUTION_METHOD)
+        LoggingContextHolder.append("\n║ 执行方法: ")
                 .append(handlerMethod.toString());
 
-        processRequest(request, logAppender);
-
-        request.setAttribute("logAppender", logAppender);
+        loggingRequest(request);
         return true;
     }
 
@@ -59,126 +54,75 @@ public class LoggingInterceptor implements HandlerInterceptor {
             return;
         }
 
-        StringBuilder logAppender = (StringBuilder) request.getAttribute("logAppender");
-        boolean isFail = processResponse(response, logAppender);
+        boolean isSuccess = loggingResponse(response);
 
-        long start = (long) request.getAttribute("start");
-        long end = System.currentTimeMillis();
-        long cost = end - start;
+        long took = LoggingContextHolder.stop();
 
-        logAppender.append(LoggingConsts.EXECUTION_COST)
-                .append(cost)
-                .append(LoggingConsts.COST_UNIT)
-                .append(LoggingConsts.END);
+        StringBuilder loggingBuilder = LoggingContextHolder.get();
+
+        loggingBuilder.append("\n║ 执行耗时: ")
+                .append(took)
+                .append("ms")
+                .append("\n╚")
+                .append("═".repeat(60));
 
         // 最终输出
-        if (ex != null || isFail || cost > 3000L) {
-            log.error(logAppender.toString());
+        if (!isSuccess || took > 3000L || ex != null) {
+            log.error(loggingBuilder.toString());
             return;
         }
-        if (cost > 2000L) {
-            log.warn(logAppender.toString());
+        if (took > 2000L) {
+            log.warn(loggingBuilder.toString());
             return;
         }
-        log.info(logAppender.toString());
+        log.info(loggingBuilder.toString());
     }
 
-
     /**
-     * 处理请求
+     * 记录 request 参数
      *
-     * @param request     HttpServletRequest
-     * @param logAppender 日志StringBuilder
-     * @throws Exception 异常
+     * @param request HttpServletRequest
+     * @throws Exception Exception
      */
-    private void processRequest(HttpServletRequest request, StringBuilder logAppender) throws Exception {
-        logAppender.append(LoggingConsts.REQUEST_URL)
-                .append(request.getRequestURL());
+    private void loggingRequest(HttpServletRequest request) throws Exception {
+        LoggingContextHolder.append("\n║ 请求地址: ")
+                .append(request.getRequestURL())
+                .append("\n║ 请求参数: ");
 
-        logAppender.append(LoggingConsts.REQUEST_PARAM);
-        String contentType = request.getContentType();
-
-        // 浏览器地址栏访问
-        if (contentType == null) {
-            processRequestParam(request, logAppender);
-            return;
+        String queryString = request.getQueryString();
+        if (!queryString.isBlank()) {
+            LoggingContextHolder.append(queryString).append(" ");
         }
 
-        // json 请求
-        if (contentType.contains(LoggingConsts.CONTENT_TYPE_JSON)) {
-            String line;
-            BufferedReader reader = request.getReader();
-            while ((line = reader.readLine()) != null) {
-                logAppender.append(line.trim());
-            }
-            return;
-        }
-
-        // form 表单
-        if (contentType.contains(LoggingConsts.CONTENT_TYPE_FORM)) {
-            processRequestParam(request, logAppender);
-            return;
-        }
-
-        // form-data 文件上传
-        if (contentType.contains(LoggingConsts.CONTENT_TYPE_FORM_DATA)) {
-            processRequestParam(request, logAppender);
-            return;
-        }
-
-        // xml 请求
-        if (contentType.contains(LoggingConsts.CONTENT_TYPE_XML)) {
-            String line;
-            BufferedReader reader = request.getReader();
-            while ((line = reader.readLine()) != null) {
-                logAppender.append(line.trim());
-            }
+        BufferedReader reader = request.getReader();
+        String line;
+        while ((line = reader.readLine()) != null) {
+            LoggingContextHolder.append(line.trim());
         }
     }
 
     /**
-     * 追加请求参数
+     * 记录 response 参数
      *
-     * @param request     HttpServletRequest
-     * @param logAppender 日志StringBuilder
-     * @throws Exception 异常
+     * @param response HttpServletResponse
+     * @return 是否正常响应: true=正常响应; false=发生异常
+     * @throws Exception Exception
      */
-    private void processRequestParam(HttpServletRequest request, StringBuilder logAppender) throws Exception {
-        Enumeration<String> names = request.getParameterNames();
-        String name;
-        while (names.hasMoreElements()) {
-            name = names.nextElement();
-            logAppender.append(name)
-                    .append(LoggingConsts.EQUALS)
-                    .append(request.getParameter(name).replace(LoggingConsts.NEW_LINE, LoggingConsts.NEW_LINE_REPLACEMENT))
-                    .append(LoggingConsts.DELIMITER);
-        }
-    }
-
-    /**
-     * 处理响应
-     *
-     * @param response    HttpServletResponse
-     * @param logAppender 日志 StringBuilder
-     * @return boolean 是否异常返回 true=发生了异常  false=正常
-     * @throws Exception 异常
-     */
-    public boolean processResponse(HttpServletResponse response, StringBuilder logAppender) throws Exception {
+    private boolean loggingResponse(HttpServletResponse response) throws Exception {
         ContentCachingResponseWrapper wrapper = (ContentCachingResponseWrapper) response;
-        InputStream inputStream = wrapper.getContentInputStream();
-        String body = IoUtil.read(inputStream, StandardCharsets.UTF_8);
-        logAppender.append(LoggingConsts.RESPONSE_BODY).append(body);
-        IoUtil.close(inputStream);
-        // 转换失败, 说明不是返回 Ret, 按正确返回处理
+        byte[] byteArray = wrapper.getContentAsByteArray();
+        String body = new String(byteArray, StandardCharsets.UTF_8);
+        LoggingContextHolder.append("\n║ 响应参数: ")
+                .append(body);
+        wrapper.copyBodyToResponse();
+        // 转换失败, 返回 null, 说明不是返回 Ret, 按正确返回处理
         CodeWrapper codeWrapper = JsonUtil.parseObject(body, CodeWrapper.class);
-        return codeWrapper != null && codeWrapper.getCode() != RetEnum.OK.code;
+        return codeWrapper == null || codeWrapper.getCode() == RetEnum.OK.code;
     }
 
     @Data
     private static class CodeWrapper {
-
         private int code;
-
     }
 
 }

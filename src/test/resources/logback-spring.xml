@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- 通用日志策略 -->
+    <include resource="logback-default.xml"/>
+
+</configuration>

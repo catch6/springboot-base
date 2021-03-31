@@ -1,6 +1,8 @@
 package net.wenzuo.base.interceptor;
 
 /**
+ * 请求响应日志记录
+ *
  * @author zhanghao13
  * @since 2021/3/30 11:27
  */
@@ -15,25 +17,34 @@ public abstract class LoggingContextHolder {
         LOGGING_CONTEXT_THREAD_LOCAL.set(context);
     }
 
-    public static void append(String content) {
+    public static StringBuilder append(String content) {
+        check();
         LoggingContext context = LOGGING_CONTEXT_THREAD_LOCAL.get();
-        if (context == null) {
-            throw new IllegalStateException("必须先调用start()方法初始化");
-        }
-        context.loggingBuilder.append(content);
+        return context.loggingBuilder.append(content);
     }
 
-    public LoggingContext end() {
+    public static long stop() {
+        check();
         LoggingContext context = LOGGING_CONTEXT_THREAD_LOCAL.get();
-        if (context == null) {
-            throw new IllegalStateException("必须先调用start()方法初始化");
-        }
         context.endTime = System.currentTimeMillis();
-        return context;
+        return context.endTime - context.startTime;
+    }
+
+    public static StringBuilder get() {
+        check();
+        LoggingContext context = LOGGING_CONTEXT_THREAD_LOCAL.get();
+        return context.loggingBuilder;
+    }
+
+    private static void check() {
+        LoggingContext context = LOGGING_CONTEXT_THREAD_LOCAL.get();
+        if (context == null) {
+            throw new IllegalStateException("必须先调用start()方法初始化");
+        }
     }
 
 
-    public static class LoggingContext {
+    private static class LoggingContext {
 
         private long startTime;
         private long endTime;

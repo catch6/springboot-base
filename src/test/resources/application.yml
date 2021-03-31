@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: wenzuo-base
+  profiles:
+    include: base

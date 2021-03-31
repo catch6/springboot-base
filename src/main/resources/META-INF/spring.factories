@@ -1,5 +1,5 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
   net.wenzuo.base.config.ExceptionConfig,\
   net.wenzuo.base.config.JacksonConfig,\
-  net.wenzuo.base.filter.RequestWrapperFilter,\
+  net.wenzuo.base.filter.HttpLoggingFilter,\
   net.wenzuo.base.interceptor.LoggingInterceptor
