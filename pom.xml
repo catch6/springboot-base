@@ -140,6 +140,7 @@
                         </goals>
                         <!-- JDK8必须使用下面的配置 -->
                         <configuration>
+                            <detectJavaApiLink>false</detectJavaApiLink>
                             <encoding>UTF-8</encoding>
                             <charset>UTF-8</charset>
                             <additionalparam>-Xdoclint:none</additionalparam>

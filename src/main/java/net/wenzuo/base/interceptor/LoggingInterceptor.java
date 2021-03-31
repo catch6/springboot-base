@@ -7,6 +7,7 @@ import net.wenzuo.base.util.RetEnum;
 import org.springframework.core.annotation.Order;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.util.ContentCachingResponseWrapper;
@@ -36,7 +37,7 @@ public class LoggingInterceptor implements HandlerInterceptor {
         }
         LoggingContextHolder.start();
         LoggingContextHolder.append("\n╔")
-                .append("═".repeat(60));
+                .append("============================================================");
 
         HandlerMethod handlerMethod = (HandlerMethod) handler;
         LoggingContextHolder.append("\n║ 执行方法: ")
@@ -64,7 +65,7 @@ public class LoggingInterceptor implements HandlerInterceptor {
                 .append(took)
                 .append("ms")
                 .append("\n╚")
-                .append("═".repeat(60));
+                .append("============================================================");
 
         // 最终输出
         if (!isSuccess || took > 3000L || ex != null) {
@@ -90,7 +91,7 @@ public class LoggingInterceptor implements HandlerInterceptor {
                 .append("\n║ 请求参数: ");
 
         String queryString = request.getQueryString();
-        if (!queryString.isBlank()) {
+        if (StringUtils.hasLength(queryString)) {
             LoggingContextHolder.append(queryString).append(" ");
         }
 
